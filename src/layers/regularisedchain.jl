@@ -63,7 +63,7 @@ function Base.show(io::IO, c::RegularisedChain)
 end
 
 regularise(layer, regulariser::Any) = layer;
-regularise(layer::Chain, regulariser::Any) = RegularisedChain(regulariser, regularise.(layer.layers, regulariser)...)
+regularise(layer::Chain, regulariser::Any) = RegularisedChain(regularise.(layer.layers, regulariser), fill(regulariser, length(layer.layers)));
 
 nullregulariser(x) = 0
 l2(x) = mean(x.^2)
