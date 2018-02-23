@@ -1,25 +1,25 @@
 """
-    RegularisedChain(layers,regularizations)
-    RegularisedChain(regularization,layers...)
+    RegularisedChain(layers,regularisations)
+    RegularisedChain(regularisation,layers...)
 
 Chain multiple layers / functions together, so that they are called in sequence
 on a given input.
 
 If the chain is called with additional scalar parameter, appropriate regulariser is 
 called on output of each layer. Regularised chain then returns Tuple, where the first 
-item is the output of the Chain and the second is the value of regularization.
+item is the output of the Chain and the second is the value of regularisation.
 
 An example where this construct might be useful is 
 Generalization in Deep Learning, Kenji Kawaguchi, Leslie Pack Kaelbling, Yoshua Bengio, 2017
 https://arxiv.org/abs/1710.05468
 
 ```julia
-import Flux: RegularisedChain, nullregularizer, l1
-m = RegularisedChain([Dense(10, 5), Dense(5, 2)],[nullregularizer,l1])
+import Flux: RegularisedChain, nullregulariser, l1
+m = RegularisedChain([Dense(10, 5), Dense(5, 2)],[nullregulariser,l1])
 m = Flux.RegularisedChain(Flux.l1,Dense(10, 5), Dense(5, 2))
 x = rand(10)
 m(x) == m[2](m[1](x)) # invocation equals that of the normal chain
-m(x,0)								# invocation with regularization, returns tuple where first item is equal to m(x)
+m(x,0)								# invocation with regularisation, returns tuple where first item is equal to m(x)
 m(x,0)[1] == m(x)
 ```
 
@@ -61,7 +61,7 @@ function Base.show(io::IO, c::RegularisedChain)
 end
 
 
-nullregularizer(x) = 0
+nullregulariser(x) = 0
 l2(x) = mean(x.^2)
 l1(x) = mean(abs.(x))
 function regcov(x)
