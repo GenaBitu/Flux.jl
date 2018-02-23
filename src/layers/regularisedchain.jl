@@ -1,4 +1,4 @@
-export RegularisedChain, nullregulariser, l2, l1, regcov, logcov, darc1;
+export RegularisedChain, regularise, nullregulariser, l2, l1, regcov, logcov, darc1;
 
 """
     RegularisedChain(layers,regularisations)
@@ -62,6 +62,8 @@ function Base.show(io::IO, c::RegularisedChain)
   print(io, ")")
 end
 
+regularise(layer, regulariser::Any) = layer;
+regularise(layer::Chain, regulariser::Any) = RegularisedChain(regulariser, regularise.(layer.layers, regulariser)...)
 
 nullregulariser(x) = 0
 l2(x) = mean(x.^2)
