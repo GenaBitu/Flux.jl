@@ -1,3 +1,5 @@
+export RegularisedChain, nullregulariser, l2, l1, regcov, logcov, darc1;
+
 """
     RegularisedChain(layers,regularisations)
     RegularisedChain(regularisation,layers...)
@@ -14,7 +16,7 @@ Generalization in Deep Learning, Kenji Kawaguchi, Leslie Pack Kaelbling, Yoshua 
 https://arxiv.org/abs/1710.05468
 
 ```julia
-import Flux: RegularisedChain, nullregulariser, l1
+using Flux
 m = RegularisedChain([Dense(10, 5), Dense(5, 2)],[nullregulariser,l1])
 m = Flux.RegularisedChain(Flux.l1,Dense(10, 5), Dense(5, 2))
 x = rand(10)
