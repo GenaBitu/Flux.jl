@@ -1,5 +1,7 @@
 using Flux, Base.Test
 
+srand(0)
+
 @testset "Flux" begin
 
 include("utils.jl")
@@ -8,9 +10,10 @@ include("layers/normalisation.jl")
 include("layers/stateless.jl")
 include("optimise.jl")
 include("data.jl")
+include("jit.jl")
 
 if Base.find_in_path("CuArrays") ≠ nothing
-  include("cuarrays.jl")
+  include("cuda/cuda.jl")
 end
 
 end
