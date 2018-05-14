@@ -10,7 +10,8 @@ using MacroTools: @forward
 export Chain, Dense, RNN, LSTM, GRU, Conv, Conv2D,
   Dropout, LayerNorm, BatchNorm,
   SGD, ADAM, Momentum, Nesterov, AMSGrad,
-  param, params, mapleaves, cpu, gpu
+  param, params, mapleaves, cpu, gpu,
+  TargetDense
 
 @reexport using NNlib
 using NNlib: @fix
@@ -30,6 +31,7 @@ include("treelike.jl")
 
 include("layers/stateless.jl")
 include("layers/basic.jl")
+include("layers/targetprop.jl")
 include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalisation.jl")
