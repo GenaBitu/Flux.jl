@@ -45,11 +45,11 @@ function train!(loss, data, opt; cb = () -> ())
   end
 end
 
-function targettrain!(model, data, opt; cb = () -> ())
+function targettrain!(model, loss, data, opt; cb = () -> ())
   cb = runall(cb)
   opt = runall(opt)
   @progress for d in data
-	@interrupts target!(model(d[1]), d[2])
+	@interrupts target!(model, loss(model(d[1]), d[2]))
     opt()
     cb() == :stop && break
   end
