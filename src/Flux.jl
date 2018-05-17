@@ -31,10 +31,11 @@ include("treelike.jl")
 
 include("layers/stateless.jl")
 include("layers/basic.jl")
-include("layers/targetprop.jl")
 include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalisation.jl")
+
+include("targetprop.jl")
 
 include("data/Data.jl")
 
