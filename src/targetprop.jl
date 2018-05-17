@@ -1,3 +1,5 @@
+export TargetDense, targettrain!;
+
 struct TargetDense{F, S, T, L}
 	W::S
 	dual_W::S

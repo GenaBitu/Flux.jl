@@ -1,6 +1,6 @@
 module Optimise
 
-export update!, params, train!, targettrain!,
+export update!, params, train!,
   SGD, ADAM, Momentum, Nesterov, RMSProp, ADAGrad, ADADelta, AMSGrad
 
 struct Param{T}
