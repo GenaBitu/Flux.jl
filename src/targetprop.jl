@@ -12,6 +12,8 @@ mutable struct TargetDense{F, S, T, L}
 	out::TrackedArray
 end
 
+treelike(TargetDense);
+
 function TargetDense(in::Integer, out::Integer, σ, loss; initW = glorot_uniform, initb = zeros)::TargetDense
 	return TargetDense(param(initW(out, in)), param(initW(in, out)), param(initb(out)), param(initb(in)), σ, loss, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()));
 end
@@ -38,6 +40,8 @@ mutable struct TargetSoftmax{S, T, L}
 	in::Array
 	out::Array
 end
+
+treelike(TargetSoftmax);
 
 function TargetSoftmax(dim::Integer, loss; initW = glorot_uniform, initb = zeros):TargetSoftmax
 	return TargetSoftmax(param(initW(dim, dim)), param(initb(dim)), loss, Array{Float32, 0}(),Array{Float32, 0}());
