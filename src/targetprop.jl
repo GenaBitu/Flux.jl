@@ -8,16 +8,18 @@ mutable struct TargetDense{F, S, T, L}
 	dual_b::T
 	σ::F
 	loss::L
+	in::Array
 	out::TrackedArray
 end
 
 function TargetDense(in::Integer, out::Integer, σ, loss; initW = glorot_uniform, initb = zeros)::TargetDense
-	return TargetDense(param(initW(out, in)), param(initW(in, out)), param(initb(out)), param(initb(in)), σ, loss, TrackedArray(Array{Float32, 0}()));
+	return TargetDense(param(initW(out, in)), param(initW(in, out)), param(initb(out)), param(initb(in)), σ, loss, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()));
 end
 
 function (a::TargetDense)(x)
 	W, b, σ = a.W, a.b, a.σ;
-	a.out = @fix σ.(W*data(x) .+ b);
+	a.in = data(x);
+	a.out = @fix σ.(W*a.in .+ b);
 	return a.out;
 end
 
@@ -33,36 +35,38 @@ mutable struct TargetSoftmax{S, T, L}
 	dual_W::S
 	dual_b::T
 	loss::L
-	out::TrackedArray
+	in::Array
+	out::Array
 end
 
 function TargetSoftmax(dim::Integer, loss; initW = glorot_uniform, initb = zeros):TargetSoftmax
-	return TargetSoftmax(initW(dim, dim), initb(dim), loss, TrackedArray(Array{Float32, 0}()));
+	return TargetSoftmax(param(initW(dim, dim)), param(initb(dim)), loss, Array{Float32, 0}(),Array{Float32, 0}());
 end
 
 function (a::TargetSoftmax)(x)
-	a.out = softmax(x);
+	a.in = data(x);
+	a.out = softmax(a.in);
 	return a.out;
 end
 
 # targetprop
 
 function target!(a::TargetSoftmax, target)
-	println("TargetSoftmax");
-	back!(a.loss(a.out, target));
 	W, b, σ = a.dual_W, a.dual_b, identity;
-	return @fix σ.(W*data(a.out) .+ b);
+	ret = @fix σ.(W*a.out .+ b);
+	back!(a.loss(ret, a.in))
+	return ret;
 end
 
 function target!(a::TargetDense, target)
-	println("TargetDense");
 	back!(a.loss(a.out, target));
 	W, b, σ = a.dual_W, a.dual_b, a.σ;
-	return @fix σ.(W*data(a.out) .+ b);
+	ret = @fix σ.(W*data(a.out) .+ b);
+	back!(a.loss(ret, a.in))
+	return ret;
 end
 
 function target!(a::Chain, target)
-	println("Chain");
 	map(x->target=target!(x, target), reverse(a.layers));
 	return target;
 end
