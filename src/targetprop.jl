@@ -56,7 +56,7 @@ end
 # targetprop
 
 function target!(a::TargetSoftmax, target)
-	W, b, σ = a.dual_W, a.dual_b, identity;
+	W, b, σ = a.dual_W, a.dual_b, tanh;
 	ret = @fix σ.(W*a.out .+ b);
 	back!(a.loss(ret, a.in))
 	return data(ret);
