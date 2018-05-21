@@ -59,7 +59,7 @@ function target!(a::TargetSoftmax, target)
 	W, b, σ = a.dual_W, a.dual_b, identity;
 	ret = @fix σ.(W*a.out .+ b);
 	back!(a.loss(ret, a.in))
-	return ret;
+	return data(ret);
 end
 
 function target!(a::TargetDense, target)
@@ -67,7 +67,7 @@ function target!(a::TargetDense, target)
 	W, b, σ = a.dual_W, a.dual_b, a.σ;
 	ret = @fix σ.(W*data(a.out) .+ b);
 	back!(a.loss(ret, a.in))
-	return ret;
+	return data(ret);
 end
 
 function target!(a::Chain, target)
@@ -76,12 +76,12 @@ function target!(a::Chain, target)
 end
 
 function targettrain!(model, data, opt; cb = () -> ())
-  cb = Optimise.runall(cb);
-  opt = Optimise.runall(opt);
-  @progress for d in data
-	model(d[1]);
-	Optimise.@interrupts target!(model, d[2]);
-    opt();
-    cb() == :stop && break;
-  end
+	cb = Optimise.runall(cb);
+	opt = Optimise.runall(opt);
+	@progress for d in data
+		model(d[1]);
+		Optimise.@interrupts target!(model, d[2]);
+		opt();
+		cb() == :stop && break;
+	end
 end
