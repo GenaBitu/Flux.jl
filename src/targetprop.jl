@@ -1,4 +1,4 @@
-export TargetDense, TargetSoftmax, targettrain!;
+export TargetDense, TargetSoftmax, targettrain!, difftargettrain!;
 
 # TargetDense
 mutable struct TargetDense{F, S, T, L}
@@ -81,6 +81,41 @@ function targettrain!(model, data, opt; cb = () -> ())
 	@progress for d in data
 		model(d[1]);
 		Optimise.@interrupts targetprop!(model, d[2]);
+		opt();
+		cb() == :stop && break;
+	end
+end
+
+# difftargetprop
+
+function difftargetprop!(a::TargetSoftmax, target)
+	target += data(a.out);
+	W, b, σ = a.dual_W, a.dual_b, identity;
+	dual(x) = σ.(W*data(x) .+ b);
+	back!(a.loss(dual(a.out), a.in))
+	return data(dual(target) - dual(a.out));
+end
+
+function difftargetprop!(a::TargetDense, target)
+	target += data(a.out);
+	back!(a.loss(target, a.out));
+	W, b, σ = a.dual_W, a.dual_b, a.σ;
+	dual(x) = σ.(W*data(x) .+ b);
+	back!(a.loss(dual(a.out), a.in))
+	return data(dual(target) - dual(a.out));
+end
+
+function difftargetprop!(a::Chain, target)
+	map(x->target=difftargetprop!(x, target), reverse(a.layers));
+	return target;
+end
+
+function difftargettrain!(model, data, opt; cb = () -> ())
+	cb = Optimise.runall(cb);
+	opt = Optimise.runall(opt);
+	@progress for d in data
+		model(d[1]);
+		Optimise.@interrupts difftargetprop!(model, d[2]);
 		opt();
 		cb() == :stop && break;
 	end
