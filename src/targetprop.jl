@@ -43,7 +43,7 @@ end
 
 treelike(TargetSoftmax);
 
-function TargetSoftmax(dim::Integer, loss; initW = glorot_uniform, initb = zeros):TargetSoftmax
+function TargetSoftmax(dim::Integer, loss; initW = glorot_uniform, initb = zeros)::TargetSoftmax
 	return TargetSoftmax(param(initW(dim, dim)), param(initb(dim)), loss, Array{Float32, 0}(),Array{Float32, 0}());
 end
 
@@ -55,23 +55,23 @@ end
 
 # targetprop
 
-function target!(a::TargetSoftmax, target)
-	W, b, σ = a.dual_W, a.dual_b, tanh;
-	ret = @fix σ.(W*a.out .+ b);
-	back!(a.loss(ret, a.in))
-	return data(ret);
+function targetprop!(a::TargetSoftmax, target)
+	W, b, σ = a.dual_W, a.dual_b, identity;
+	dual(x) = σ.(W*data(x) .+ b);
+	back!(a.loss(dual(a.out), a.in))
+	return data(dual(target));
 end
 
-function target!(a::TargetDense, target)
-	back!(a.loss(a.out, target));
+function targetprop!(a::TargetDense, target)
+	back!(a.loss(target, a.out));
 	W, b, σ = a.dual_W, a.dual_b, a.σ;
-	ret = @fix σ.(W*data(a.out) .+ b);
-	back!(a.loss(ret, a.in))
-	return data(ret);
+	dual(x) = σ.(W*data(x) .+ b);
+	back!(a.loss(dual(a.out), a.in))
+	return data(dual(target));
 end
 
-function target!(a::Chain, target)
-	map(x->target=target!(x, target), reverse(a.layers));
+function targetprop!(a::Chain, target)
+	map(x->target=targetprop!(x, target), reverse(a.layers));
 	return target;
 end
 
@@ -80,7 +80,7 @@ function targettrain!(model, data, opt; cb = () -> ())
 	opt = Optimise.runall(opt);
 	@progress for d in data
 		model(d[1]);
-		Optimise.@interrupts target!(model, d[2]);
+		Optimise.@interrupts targetprop!(model, d[2]);
 		opt();
 		cb() == :stop && break;
 	end
