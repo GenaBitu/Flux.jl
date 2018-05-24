@@ -75,12 +75,16 @@ function targetprop!(a::Chain, target)
 	return target;
 end
 
-function targettrain!(model, data, opt; cb = () -> ())
+function targettrain!(model, modelloss, data, opt; cb = () -> ())
+	η = 0.001; # TODO: Get from optimiser
 	cb = Optimise.runall(cb);
 	opt = Optimise.runall(opt);
 	@progress for d in data
-		model(d[1]);
-		Optimise.@interrupts targetprop!(model, d[2]);
+		y_hat = Flux.data(model(d[1]));
+		grad = param(y_hat);
+		back!(modelloss(grad, d[2]));
+		target = y_hat - η * grad.grad;
+		Optimise.@interrupts targetprop!(model, target);
 		opt();
 		cb() == :stop && break;
 	end
@@ -110,12 +114,16 @@ function difftargetprop!(a::Chain, target)
 	return target;
 end
 
-function difftargettrain!(model, data, opt; cb = () -> ())
+function difftargettrain!(model, modelloss, data, opt; cb = () -> ())
+	η = 0.001; # TODO: Get from optimiser
 	cb = Optimise.runall(cb);
 	opt = Optimise.runall(opt);
 	@progress for d in data
-		model(d[1]);
-		Optimise.@interrupts difftargetprop!(model, d[2]);
+		y_hat = Flux.data(model(d[1]));
+		grad = param(y_hat);
+		back!(modelloss(grad, d[2]));
+		target = y_hat - η * grad.grad;
+		Optimise.@interrupts difftargetprop!(model, target);
 		opt();
 		cb() == :stop && break;
 	end
