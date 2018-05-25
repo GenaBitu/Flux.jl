@@ -10,19 +10,39 @@ mutable struct TargetDense{F, S, T, L}
 	loss::L
 	in::Array
 	out::TrackedArray
+	regulariser::Function
+	λ::Number
 end
 
 treelike(TargetDense);
 
-function TargetDense(in::Integer, out::Integer, σ, loss; initW = glorot_uniform, initb = zeros)::TargetDense
-	return TargetDense(param(initW(out, in)), param(initW(in, out)), param(initb(out)), param(initb(in)), σ, loss, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()));
+function TargetDense(in::Integer, out::Integer, σ, loss; initW = glorot_uniform, initb = zeros, regulariser = regcov, λ::Number = 0.5)::TargetDense
+	return TargetDense(param(initW(out, in)), param(initW(in, out)), param(initb(out)), param(initb(in)), σ, loss, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()), regulariser, λ);
 end
 
 function (a::TargetDense)(x)
 	W, b, σ = a.W, a.b, a.σ;
 	a.in = data(x);
 	a.out = @fix σ.(W*a.in .+ b);
+	a.out = a.out .+ (a.λ .* a.regulariser(a.out));
 	return a.out;
+end
+
+l2(x) = mean(x.^2);
+l1(x) = mean(abs.(x));
+noise(x) = rand(size(x));
+function regcov(x);
+	xx = x .- mean(x,2);
+	return mean(xx*transpose(xx));
+end
+function logcov(x)
+	o = x*transpose(x);
+	return mean(o) - mean(log.(diag(o) .+ 1f-4 ));
+end
+#Generalization in Deep Learning, Kenji Kawaguchi, Leslie Pack Kaelbling, Yoshua Bengio
+function darc1(x)
+	l = sum(abs.(x),2)/size(x,2);
+	return l[indmax(Flux.Tracker.data(l))];
 end
 
 function Base.show(io::IO, l::TargetDense)
