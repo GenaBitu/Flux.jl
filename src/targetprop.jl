@@ -63,13 +63,17 @@ end
 
 # difftargetprop
 
-function difftargetprop!(a::TargetDense, target)
-	target += data(a.out);
+function difftargetprop!(a::TargetDense, packedTarget)
+	(target, last) = packedTarget
+	if !last
+		target += data(a.out);
+	end
 	back!(a.loss(target, a.out) + a.regulariser(a.W));
 	W, b, σ = a.dual_W, a.dual_b, a.σ;
 	dual(x) = @fix σ.(W*data(x) .+ b);
 	back!(a.loss(dual(a.out), a.in))
-	return data(dual(target) - dual(a.out));
+	nextTarget = data(dual(target) - dual(a.out));
+	return (nextTarget, false);
 end
 
 function difftargetprop!(a::Chain, target)
@@ -85,7 +89,7 @@ function difftargettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = ()
 		grad = param(y_hat);
 		back!(modelloss(grad, d[2]));
 		target = @fix y_hat - η * grad.grad;
-		Optimise.@interrupts difftargetprop!(model, target);
+		Optimise.@interrupts difftargetprop!(model, (target, true));
 		opt();
 		cb() == :stop && break;
 	end
