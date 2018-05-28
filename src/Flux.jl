@@ -35,6 +35,7 @@ include("layers/recurrent.jl")
 include("layers/normalisation.jl")
 
 include("targetprop.jl")
+include("regularisers.jl")
 
 include("data/Data.jl")
 
