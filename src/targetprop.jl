@@ -47,8 +47,7 @@ function targetprop!(a::Chain, target)
 	return target;
 end
 
-function targettrain!(model, modelloss, data, opt; cb = () -> ())
-	η = 1; # TODO: Get from optimiser
+function targettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> ())
 	cb = Optimise.runall(cb);
 	opt = Optimise.runall(opt);
 	@progress for d in data
@@ -78,8 +77,7 @@ function difftargetprop!(a::Chain, target)
 	return target;
 end
 
-function difftargettrain!(model, modelloss, data, opt; cb = () -> ())
-	η = 0.001; # TODO: Get from optimiser
+function difftargettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> ())
 	cb = Optimise.runall(cb);
 	opt = Optimise.runall(opt);
 	@progress for d in data
