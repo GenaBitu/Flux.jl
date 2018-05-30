@@ -39,7 +39,7 @@ function targetprop!(a::TargetDense, target)
 end
 
 function targetprop!(a::Chain, target)
-	map(x->target=targetprop!(x, target), reverse(a.layers));
+	foldl((m, x) -> targetprop!(x, m), target, reverse(a.layers))
 	return target;
 end
 
@@ -71,7 +71,7 @@ function difftargetprop!(a::TargetDense, packedTarget)
 end
 
 function difftargetprop!(a::Chain, target)
-	map(x->target=difftargetprop!(x, target), reverse(a.layers));
+	foldl((m, x) -> difftargetprop!(x, m), target, reverse(a.layers))
 	return target;
 end
 
