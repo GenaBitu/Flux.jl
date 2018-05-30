@@ -1,12 +1,9 @@
 export TargetDense, TargetSoftmax, targettrain!, difftargettrain!;
 
 # TargetDense
-mutable struct TargetDense{F, S, T, L}
-	W::S
-	dual_W::S
-	b::T
-	dual_b::T
-	σ::F
+mutable struct TargetDense{F, S, L}
+	f::F
+	dual_f::S
 	loss::L
 	in::Array
 	out::TrackedArray
@@ -15,31 +12,30 @@ end
 
 treelike(TargetDense);
 
-function TargetDense(in::Integer, out::Integer, σ, loss; initW = glorot_uniform, initb = zeros, regulariser = regcov(0.5))::TargetDense
-	return TargetDense(param(initW(out, in)), param(initW(in, out)), param(initb(out)), param(initb(in)), σ, loss, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()), regulariser);
+function TargetDense(f, dual_f, loss; regulariser = regcov(0.5))::TargetDense
+	return TargetDense(f, dual_f, loss, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()), regulariser);
 end
 
 function (a::TargetDense)(x)
-	W, b, σ = a.W, a.b, a.σ;
 	a.in = data(x);
-	a.out = @fix σ.(W*a.in .+ b);
+	a.out = a.f(a.in);
 	return a.out;
 end
 
-function Base.show(io::IO, l::TargetDense)
-	print(io, "TargetDense(", size(l.W, 2), ", ", size(l.W, 1));
-	l.σ == identity || print(io, ", ", l.σ);
+function Base.show(io::IO, a::TargetDense)
+	print(io, "TargetDense(");
+	print(io, a.f);
+	print(io, ", ");
+	print(io, a.dual_f);
 	print(io, ")");
 end
 
 # targetprop
 
 function targetprop!(a::TargetDense, target)
-	back!(a.loss(target, a.out) + a.regulariser(a.W));
-	W, b, σ = a.dual_W, a.dual_b, sigmoid;
-	dual(x) = @fix σ.(W*data(x) .+ b);
-	back!(a.loss(dual(a.out), a.in))
-	return data(dual(target));
+	back!(a.loss(target, a.out)); # TODO: Regularisation
+	back!(a.loss(a.dual_f(data(a.out)), a.in))
+	return data(a.dual_f(data(target)));
 end
 
 function targetprop!(a::Chain, target)
@@ -68,11 +64,9 @@ function difftargetprop!(a::TargetDense, packedTarget)
 	if !last
 		target += data(a.out);
 	end
-	back!(a.loss(target, a.out) + a.regulariser(a.W));
-	W, b, σ = a.dual_W, a.dual_b, a.σ;
-	dual(x) = @fix σ.(W*data(x) .+ b);
-	back!(a.loss(dual(a.out), a.in))
-	nextTarget = data(dual(target) - dual(a.out));
+	back!(a.loss(target, a.out)); # TODO: Regularisation
+	back!(a.loss(a.dual_f(data(a.out)), a.in))
+	nextTarget = data(a.dual_f(data(target)) - a.dual_f(data(a.out)));
 	return (nextTarget, false);
 end
 
