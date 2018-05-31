@@ -4,6 +4,7 @@ mutable struct Target{F, S, L}
 	f::F
 	dual_f::S
 	loss::L
+	σ::Real
 	in::Array
 	out::TrackedArray
 	regulariser::Function
@@ -11,8 +12,8 @@ end
 
 treelike(Target);
 
-function Target(f, dual_f, loss; regulariser = regcov(0.5))::Target
-	return Target(f, dual_f, loss, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()), regulariser);
+function Target(f, dual_f, loss; σ::Real = 1e-3, regulariser = regcov(0.5))::Target
+	return Target(f, dual_f, loss, σ, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()), regulariser);
 end
 
 function (a::Target)(x)
@@ -33,7 +34,8 @@ end
 
 function targetprop!(a::Target, target)
 	back!(a.loss(target, a.out)); # TODO: Regularisation
-	back!(a.loss(a.dual_f(data(a.out)), a.in))
+	ϵ = a.σ * randn(size(a.in))
+	back!(a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ))
 	return data(a.dual_f(data(target)));
 end
 
@@ -65,6 +67,7 @@ function difftargetprop!(a::Target, packedTarget)
 	end
 	back!(a.loss(target, a.out)); # TODO: Regularisation
 	back!(a.loss(a.dual_f(data(a.out)), a.in))
+	back!(a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ))
 	nextTarget = data(a.dual_f(data(target)) - a.dual_f(data(a.out)));
 	return (nextTarget, false);
 end
