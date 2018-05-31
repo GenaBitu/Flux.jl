@@ -6,7 +6,7 @@ mutable struct Target{F, S, L}
 	loss::L
 	σ::Real
 	in::Array
-	out::TrackedArray
+	out::Union{Array, TrackedArray}
 	regulariser::Function
 end
 
@@ -33,7 +33,9 @@ end
 # targetprop
 
 function targetprop!(a::Target, target)
-	back!(a.loss(target, a.out)); # TODO: Regularisation
+	if isa(a.out,TrackedArray)
+		back!(a.loss(target, a.out)); # TODO: Regularisation
+	end
 	ϵ = a.σ * randn(size(a.in))
 	back!(a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ))
 	return data(a.dual_f(data(target)));
@@ -65,8 +67,10 @@ function difftargetprop!(a::Target, packedTarget)
 	if !last
 		target += data(a.out);
 	end
-	back!(a.loss(target, a.out)); # TODO: Regularisation
-	back!(a.loss(a.dual_f(data(a.out)), a.in))
+	if isa(a.out,TrackedArray)
+		back!(a.loss(target, a.out)); # TODO: Regularisation
+	end
+	ϵ = a.σ * randn(size(a.in));
 	back!(a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ))
 	nextTarget = data(a.dual_f(data(target)) - a.dual_f(data(a.out)));
 	return (nextTarget, false);
