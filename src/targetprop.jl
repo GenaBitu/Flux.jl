@@ -1,7 +1,6 @@
-export TargetDense, TargetSoftmax, targettrain!, difftargettrain!;
+export Target, targettrain!, difftargettrain!;
 
-# TargetDense
-mutable struct TargetDense{F, S, L}
+mutable struct Target{F, S, L}
 	f::F
 	dual_f::S
 	loss::L
@@ -10,20 +9,20 @@ mutable struct TargetDense{F, S, L}
 	regulariser::Function
 end
 
-treelike(TargetDense);
+treelike(Target);
 
-function TargetDense(f, dual_f, loss; regulariser = regcov(0.5))::TargetDense
-	return TargetDense(f, dual_f, loss, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()), regulariser);
+function Target(f, dual_f, loss; regulariser = regcov(0.5))::Target
+	return Target(f, dual_f, loss, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()), regulariser);
 end
 
-function (a::TargetDense)(x)
+function (a::Target)(x)
 	a.in = data(x);
 	a.out = a.f(a.in);
 	return a.out;
 end
 
-function Base.show(io::IO, a::TargetDense)
-	print(io, "TargetDense(");
+function Base.show(io::IO, a::Target)
+	print(io, "Target(");
 	print(io, a.f);
 	print(io, ", ");
 	print(io, a.dual_f);
@@ -32,7 +31,7 @@ end
 
 # targetprop
 
-function targetprop!(a::TargetDense, target)
+function targetprop!(a::Target, target)
 	back!(a.loss(target, a.out)); # TODO: Regularisation
 	back!(a.loss(a.dual_f(data(a.out)), a.in))
 	return data(a.dual_f(data(target)));
@@ -59,7 +58,7 @@ end
 
 # difftargetprop
 
-function difftargetprop!(a::TargetDense, packedTarget)
+function difftargetprop!(a::Target, packedTarget)
 	(target, last) = packedTarget
 	if !last
 		target += data(a.out);
