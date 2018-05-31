@@ -51,7 +51,7 @@ function targettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> 
 		y_hat = Flux.data(model(d[1]));
 		grad = param(y_hat);
 		back!(modelloss(grad, d[2]));
-		target = @fix y_hat - η * grad.grad;
+		target = @fix y_hat - η * length(d[2]) * grad.grad;
 		Optimise.@interrupts targetprop!(model, target);
 		opt();
 		cb() == :stop && break;
@@ -84,7 +84,7 @@ function difftargettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = ()
 		y_hat = Flux.data(model(d[1]));
 		grad = param(y_hat);
 		back!(modelloss(grad, d[2]));
-		target = @fix y_hat - η * grad.grad;
+		target = @fix y_hat - η * length(d[2]) * grad.grad;
 		Optimise.@interrupts difftargetprop!(model, (target, true));
 		opt();
 		cb() == :stop && break;
