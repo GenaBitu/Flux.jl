@@ -36,8 +36,9 @@ function targetprop!(a::Target, target)
 	if isa(a.out,TrackedArray)
 		back!(a.loss(target, a.out)); # TODO: Regularisation
 	end
-	ϵ = a.σ * randn(size(a.in))
-	back!(a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ))
+	ϵ = a.σ * randn(size(a.in));
+	back!(a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ)); # Should be this, but doesn't work for some reason...
+	#back!(a.loss(a.dual_f(a.f(a.in .+ ϵ)), a.in .+ ϵ))
 	return data(a.dual_f(data(target)));
 end
 
@@ -71,7 +72,8 @@ function difftargetprop!(a::Target, packedTarget)
 		back!(a.loss(target, a.out)); # TODO: Regularisation
 	end
 	ϵ = a.σ * randn(size(a.in));
-	back!(a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ))
+	back!(a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ)); # Should be this, but doesn't work for some reason...
+	#back!(a.loss(a.dual_f(a.f(a.in .+ ϵ)), a.in .+ ϵ))
 	nextTarget = data(a.dual_f(data(target)) - a.dual_f(data(a.out)));
 	return (nextTarget, false);
 end
