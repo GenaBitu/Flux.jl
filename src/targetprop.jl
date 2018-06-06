@@ -73,21 +73,21 @@ end
 
 # difftargetprop
 
-function difftargetprop!(a::Target, packedTarget)
+function difftargetprop!(a::Target, packedTarget; debug::Bool = false)
 	(target, last) = packedTarget
 	if !last
 		target += data(a.out);
 	end
-	nextTarget = targetprop!(a, target) - data(a.dual_f(data(a.out)));
+	nextTarget = targetprop!(a, target; debug = debug) - data(a.dual_f(data(a.out)));
 	return (nextTarget, false);
 end
 
-function difftargetprop!(a::Chain, target)
-	foldl((m, x) -> difftargetprop!(x, m), target, reverse(a.layers))
+function difftargetprop!(a::Chain, target; debug::Bool = false)
+	foldl((m, x) -> difftargetprop!(x, m; debug = debug), target, reverse(a.layers))
 	return target;
 end
 
-function difftargettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> ())
+function difftargettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> (), debug::Bool = false)
 	cb = Optimise.runall(cb);
 	opt = Optimise.runall(opt);
 	@progress for d in data
@@ -95,7 +95,7 @@ function difftargettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = ()
 		grad = param(y_hat);
 		back!(modelloss(grad, d[2]));
 		target = @fix y_hat - η * length(d[2]) * grad.grad;
-		Optimise.@interrupts difftargetprop!(model, (target, true));
+		Optimise.@interrupts difftargetprop!(model, (target, true); debug = debug);
 		opt();
 		cb() == :stop && break;
 	end
