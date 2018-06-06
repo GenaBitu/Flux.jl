@@ -33,21 +33,23 @@ end
 # targetprop
 
 function targetprop!(a::Target, target; debug::Bool= false)
+	function debugprint(name, value)
+		if debug
+			print(name);
+			print(": ");
+			println(value);
+		end
+	end
+
 	if isa(a.out,TrackedArray)
 		l1 = a.loss(target, a.out); # TODO: Regularisation
-		if debug
-			print("l1: ");
-			println(l1);
-		end
+		debugprint("l1", l1)
 		back!(l1);
 	end
 	ϵ = a.σ * randn(size(a.in));
 	l2 = a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ); # Should be this, but doesn't work for some reason...
 	#l2 = a.loss(a.dual_f(a.f(a.in .+ ϵ)), a.in .+ ϵ);
-	if debug
-		print("l2: ");
-		println(l2);
-	end
+	debugprint("l2", l2)
 	back!(l2);
 	return data(a.dual_f(data(target)));
 end
@@ -65,6 +67,9 @@ function targettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> 
 		grad = param(y_hat);
 		back!(modelloss(grad, d[2]));
 		target = @fix y_hat - η * length(d[2]) * grad.grad;
+		if debug
+			println("Iteration:");
+		end
 		Optimise.@interrupts targetprop!(model, target; debug = debug);
 		opt();
 		cb() == :stop && break;
@@ -95,6 +100,9 @@ function difftargettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = ()
 		grad = param(y_hat);
 		back!(modelloss(grad, d[2]));
 		target = @fix y_hat - η * length(d[2]) * grad.grad;
+		if debug
+			println("Iteration:");
+		end
 		Optimise.@interrupts difftargetprop!(model, (target, true); debug = debug);
 		opt();
 		cb() == :stop && break;
