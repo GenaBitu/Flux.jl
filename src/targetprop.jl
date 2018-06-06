@@ -32,28 +32,32 @@ end
 
 # targetprop
 
-function targetprop!(a::Target, target)
+function targetprop!(a::Target, target; debug::Bool= false)
 	if isa(a.out,TrackedArray)
 		l1 = a.loss(target, a.out); # TODO: Regularisation
-		print("l1: ");
-		#println(l1);
+		if debug
+			print("l1: ");
+			println(l1);
+		end
 		back!(l1);
 	end
 	ϵ = a.σ * randn(size(a.in));
 	l2 = a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ); # Should be this, but doesn't work for some reason...
 	#l2 = a.loss(a.dual_f(a.f(a.in .+ ϵ)), a.in .+ ϵ);
-	print("l2: ");
-	#println(l2);
+	if debug
+		print("l2: ");
+		println(l2);
+	end
 	back!(l2);
 	return data(a.dual_f(data(target)));
 end
 
-function targetprop!(a::Chain, target)
-	foldl((m, x) -> targetprop!(x, m), target, reverse(a.layers))
+function targetprop!(a::Chain, target; debug::Bool = false)
+	foldl((m, x) -> targetprop!(x, m; debug = debug), target, reverse(a.layers))
 	return target;
 end
 
-function targettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> ())
+function targettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> (), debug::Bool = false)
 	cb = Optimise.runall(cb);
 	opt = Optimise.runall(opt);
 	@progress for d in data
@@ -61,7 +65,7 @@ function targettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> 
 		grad = param(y_hat);
 		back!(modelloss(grad, d[2]));
 		target = @fix y_hat - η * length(d[2]) * grad.grad;
-		Optimise.@interrupts targetprop!(model, target);
+		Optimise.@interrupts targetprop!(model, target; debug = debug);
 		opt();
 		cb() == :stop && break;
 	end
