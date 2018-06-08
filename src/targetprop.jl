@@ -7,13 +7,12 @@ mutable struct Target{F, S, L}
 	σ::Real
 	in::Array
 	out::Union{Array, TrackedArray}
-	regulariser::Function
 end
 
 treelike(Target);
 
-function Target(f, dual_f, loss; σ::Real = 1e-3, regulariser = regcov(0.5))::Target
-	return Target(f, dual_f, loss, σ, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()), regulariser);
+function Target(f, dual_f, loss; σ::Real = 0.2)::Target
+	return Target(f, dual_f, loss, σ, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()));
 end
 
 function (a::Target)(x)
