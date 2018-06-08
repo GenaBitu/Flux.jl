@@ -32,12 +32,12 @@ end
 
 # targetprop
 
-function targetprop!(a::Target, target; debug::Bool= false)
+function targetprop!(a::Target, target; debug::Array = [])
 	function debugprint(name, value)
-		if debug
+		if name in debug
 			print(name);
 			print(": ");
-			println(value);
+			println(data(value));
 		end
 	end
 
@@ -49,17 +49,24 @@ function targetprop!(a::Target, target; debug::Bool= false)
 	ϵ = a.σ * randn(size(a.in));
 	l2 = a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ); # Should be this, but doesn't work for some reason...
 	#l2 = a.loss(a.dual_f(a.f(a.in .+ ϵ)), a.in .+ ϵ);
-	debugprint("l2", l2)
+	if "l2" in debug
+		l2noiseless = a.loss(a.dual_f(data(a.f(a.in))), a.in); # Should be this, but doesn't work for some reason...
+		debugprint("l2", l2noiseless)
+	end
+	if "l2i" in debug
+		l2i = a.loss(data(a.f(data(a.dual_f(data(a.out))))), data(a.out));
+		debugprint("l2i", l2i)
+	end
 	back!(l2);
 	return data(a.dual_f(data(target)));
 end
 
-function targetprop!(a::Chain, target; debug::Bool = false)
+function targetprop!(a::Chain, target; debug::Array = [])
 	foldl((m, x) -> targetprop!(x, m; debug = debug), target, reverse(a.layers))
 	return target;
 end
 
-function targettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> (), debug::Bool = false)
+function targettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> (), debug::Array = [])
 	cb = Optimise.runall(cb);
 	opt = Optimise.runall(opt);
 	@progress for d in data
@@ -67,7 +74,7 @@ function targettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> 
 		grad = param(y_hat);
 		back!(modelloss(grad, d[2]));
 		target = @fix y_hat - η * length(d[2]) * grad.grad;
-		if debug
+		if length(debug) > 0
 			println("Iteration:");
 		end
 		Optimise.@interrupts targetprop!(model, target; debug = debug);
@@ -78,7 +85,7 @@ end
 
 # difftargetprop
 
-function difftargetprop!(a::Target, packedTarget; debug::Bool = false)
+function difftargetprop!(a::Target, packedTarget; debug::Array = [])
 	(target, last) = packedTarget
 	if !last
 		target += data(a.out);
@@ -87,12 +94,12 @@ function difftargetprop!(a::Target, packedTarget; debug::Bool = false)
 	return (nextTarget, false);
 end
 
-function difftargetprop!(a::Chain, target; debug::Bool = false)
+function difftargetprop!(a::Chain, target; debug::Array = [])
 	foldl((m, x) -> difftargetprop!(x, m; debug = debug), target, reverse(a.layers))
 	return target;
 end
 
-function difftargettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> (), debug::Bool = false)
+function difftargettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> (), debug::Array = [])
 	cb = Optimise.runall(cb);
 	opt = Optimise.runall(opt);
 	@progress for d in data
@@ -100,7 +107,7 @@ function difftargettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = ()
 		grad = param(y_hat);
 		back!(modelloss(grad, d[2]));
 		target = @fix y_hat - η * length(d[2]) * grad.grad;
-		if debug
+		if length(debug) > 0
 			println("Iteration:");
 		end
 		Optimise.@interrupts difftargetprop!(model, (target, true); debug = debug);
