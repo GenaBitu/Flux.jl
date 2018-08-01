@@ -46,12 +46,9 @@ function targetprop!(a::Target, target; debug::Array = [])
 		back!(l1);
 	end
 	ϵ = a.σ * randn(size(a.in));
-	l2 = a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ); # Should be this, but doesn't work for some reason...
-	#l2 = a.loss(a.dual_f(a.f(a.in .+ ϵ)), a.in .+ ϵ);
-	if "l2" in debug
-		l2noiseless = a.loss(a.dual_f(data(a.f(a.in))), a.in); # Should be this, but doesn't work for some reason...
-		debugprint("l2", l2noiseless)
-	end
+	#l2 = a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ); # Should be this, but doesn't work for some reason...
+	l2 = a.loss(a.dual_f(a.f(a.in .+ ϵ)), a.in .+ ϵ);
+	debugprint("l2", l2)
 	if "l2i" in debug
 		l2i = a.loss(data(a.f(data(a.dual_f(data(a.out))))), data(a.out));
 		debugprint("l2i", l2i)
