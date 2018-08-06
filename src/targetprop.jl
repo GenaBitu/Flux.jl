@@ -7,12 +7,13 @@ mutable struct Target{F, S, L}
 	σ::Real
 	in::Array
 	out::Union{Array, TrackedArray}
+	debuglog::Dict{String, Array}
 end
 
 treelike(Target);
 
 function Target(f, dual_f, loss; σ::Real = 0.2)::Target
-	return Target(f, dual_f, loss, σ, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()));
+	return Target(f, dual_f, loss, σ, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()), Dict{String, Array}());
 end
 
 function (a::Target)(x)
@@ -31,27 +32,29 @@ end
 
 # targetprop
 
-function targetprop!(a::Target, target; debug::Array = [])
-	function debugprint(name, value)
+function targetprop!(a::Target, targetTuple; debug::Array = [])
+	(target, realgrad) = targetTuple;
+	function debuglog(name, value)
 		if name in debug
-			print(name);
-			print(": ");
-			println(data(value));
+			if !haskey(a.debuglog, name)
+				a.debuglog[name] = Array{Number, 1}();
+			end
+			push!(a.debuglog[name], data(value));
 		end
 	end
 
 	if isa(a.out,TrackedArray)
 		l1 = a.loss(target, a.out); # TODO: Regularisation
-		debugprint("l1", l1)
+		debuglog("Classifier", l1);
 		back!(l1);
 	end
 	ϵ = a.σ * randn(size(a.in));
 	#l2 = a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ); # Should be this, but doesn't work for some reason...
 	l2 = a.loss(a.dual_f(a.f(a.in .+ ϵ)), a.in .+ ϵ);
-	debugprint("l2", l2)
-	if "l2i" in debug
+	debuglog("Auto-encoder", l2);
+	if "Reverse auto-encoder" in debug
 		l2i = a.loss(data(a.f(data(a.dual_f(data(a.out))))), data(a.out));
-		debugprint("l2i", l2i)
+		debuglog("Reverse auto-encoder", l2i);
 	end
 	back!(l2);
 	return data(a.dual_f(data(target)));
@@ -71,7 +74,7 @@ function targettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> 
 		back!(modelloss(grad, d[2]));
 		target = @fix y_hat - η * length(d[2]) * grad.grad;
 		if length(debug) > 0
-			println("Iteration:");
+			#println("Iteration:");
 		end
 		Optimise.@interrupts targetprop!(model, target; debug = debug);
 		opt();
