@@ -43,7 +43,14 @@ function targetprop!(a::Target, targetTuple; debug::Array = [])
 		end
 	end
 
-	if isa(a.out,TrackedArray)
+	retgrad = [];
+	if "angle" in debug
+		paramin = param(a.in);
+		fcopy = deepcopy(a.f);
+		back!(fcopy(paramin), realgrad);
+		retgrad = paramin.grad;
+	end
+	if isa(a.out, TrackedArray)
 		l1 = a.loss(target, a.out); # TODO: Regularisation
 		debuglog("Classifier", l1);
 		back!(l1);
@@ -57,7 +64,12 @@ function targetprop!(a::Target, targetTuple; debug::Array = [])
 		debuglog("Reverse auto-encoder", l2i);
 	end
 	back!(l2);
-	return data(a.dual_f(data(target)));
+	if isa(a.out,TrackedArray)
+		veclength(a) = sqrt(sum(a.^2));
+		vecangle(a, b) = acosd(dot(a, b) / (veclength(a) * veclength(b)))
+		debuglog("angle", vecangle(vcat(map(i->vec(i.grad), params(a.f))...), vcat(map(i->vec(i.grad), params(fcopy))...)));
+	end
+	return (data(a.dual_f(data(target))), retgrad);
 end
 
 function targetprop!(a::Chain, target; debug::Array = [])
@@ -76,7 +88,7 @@ function targettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> 
 		if length(debug) > 0
 			#println("Iteration:");
 		end
-		Optimise.@interrupts targetprop!(model, target; debug = debug);
+		Optimise.@interrupts targetprop!(model, (target, grad.grad); debug = debug);
 		opt();
 		cb() == :stop && break;
 	end
