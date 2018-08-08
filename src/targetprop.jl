@@ -66,7 +66,9 @@ function targetprop!(a::Target, targetTuple; debug::Array = [])
 	back!(l2);
 	if isa(a.out,TrackedArray)
 		veclength(a) = sqrt(sum(a.^2));
-		vecangle(a, b) = acosd(dot(a, b) / (veclength(a) * veclength(b)))
+		vecangle(a, b) = begin
+			acosd(min(dot(a, b) / (veclength(a) * veclength(b)), 1.0))
+		end
 		if "angle" in debug
 			debuglog("angle", vecangle(vcat(map(i->vec(i.grad), params(a.f))...), vcat(map(i->vec(i.grad), params(fcopy))...)));
 		end
