@@ -67,7 +67,9 @@ function targetprop!(a::Target, targetTuple; debug::Array = [])
 	if isa(a.out,TrackedArray)
 		veclength(a) = sqrt(sum(a.^2));
 		vecangle(a, b) = acosd(dot(a, b) / (veclength(a) * veclength(b)))
-		debuglog("angle", vecangle(vcat(map(i->vec(i.grad), params(a.f))...), vcat(map(i->vec(i.grad), params(fcopy))...)));
+		if "angle" in debug
+			debuglog("angle", vecangle(vcat(map(i->vec(i.grad), params(a.f))...), vcat(map(i->vec(i.grad), params(fcopy))...)));
+		end
 	end
 	return (data(a.dual_f(data(target))), retgrad);
 end
