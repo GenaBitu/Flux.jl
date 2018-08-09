@@ -35,6 +35,9 @@ include("layers/conv.jl")
 include("layers/recurrent.jl")
 include("layers/normalise.jl")
 
+include("targetprop.jl")
+include("regularisers.jl")
+
 include("data/Data.jl")
 
 @init @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" include("cuda/cuda.jl")
