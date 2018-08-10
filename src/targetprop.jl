@@ -37,7 +37,7 @@ function targetprop!(a::Target, targetTuple; debug::Array = [])
 	function debuglog(name, value)
 		if name in debug
 			if !haskey(a.debuglog, name)
-				a.debuglog[name] = Array{Number, 1}();
+				a.debuglog[name] = Array{typeof(data(value)), 1}();
 			end
 			push!(a.debuglog[name], data(value));
 		end
@@ -52,16 +52,16 @@ function targetprop!(a::Target, targetTuple; debug::Array = [])
 	end
 	if isa(a.out, TrackedArray)
 		l1 = a.loss(target, a.out); # TODO: Regularisation
-		debuglog("Classifier", l1);
+		debuglog("Classifier loss", l1);
 		back!(l1);
 	end
 	ϵ = a.σ * randn(size(a.in));
 	l2 = a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ);
 	#l2 = a.loss(a.dual_f(a.f(a.in .+ ϵ)), a.in .+ ϵ); # Non-standard approach
-	debuglog("Auto-encoder", l2);
-	if "Reverse auto-encoder" in debug
+	debuglog("Auto-encoder loss", l2);
+	if "Reverse auto-encoder loss" in debug
 		l2i = a.loss(data(a.f(data(a.dual_f(data(a.out))))), data(a.out));
-		debuglog("Reverse auto-encoder", l2i);
+		debuglog("Reverse auto-encoder loss", l2i);
 	end
 	back!(l2);
 	if isa(a.out,TrackedArray)
@@ -72,6 +72,7 @@ function targetprop!(a::Target, targetTuple; debug::Array = [])
 		if "angle" in debug
 			debuglog("angle", vecangle(vcat(map(i->vec(i.grad), params(a.f))...), vcat(map(i->vec(i.grad), params(fcopy))...)));
 		end
+		debuglog("jacobian", jacobian(a.f, a.in[:, rand(1:size(a.in, 2))]));
 	end
 	return (data(a.dual_f(data(target))), retgrad);
 end
