@@ -13,7 +13,7 @@ end
 treelike(Target);
 
 function Target(f, dual_f, loss; σ::Real = 0.2)::Target
-	return Target(f, dual_f, loss, σ, Array{Float32, 0}(), TrackedArray(Array{Float32, 0}()), Dict{String, Array}());
+	return Target(f, dual_f, loss, σ, Array{Float32, 0}(undef), TrackedArray(Array{Float32, 0}(undef)), Dict{String, Array}());
 end
 
 function (a::Target)(x)
