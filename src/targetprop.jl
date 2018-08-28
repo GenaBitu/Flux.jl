@@ -43,6 +43,14 @@ function targetprop!(a::Target, targetTuple; debug::Array = [])
 		end
 	end
 
+	if "difference" in debug
+		inc = similar(a.in, (size(a.in, 1), size(a.in, 2) - 1));
+		for i in 1:size(inc,2)
+			inc[:,i] = a.in[:, i + 1] - a.in[:, i];
+		end
+		debuglog("difference", mean(map(i->norm(inc[:,i]), 1:size(inc, 2))));
+	end
+
 	retgrad = [];
 	if "angle" in debug
 		paramin = param(a.in);
