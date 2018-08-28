@@ -48,7 +48,12 @@ function targetprop!(a::Target, targetTuple; debug::Array = [])
 		for i in 1:size(inc,2)
 			inc[:,i] = a.in[:, i + 1] - a.in[:, i];
 		end
-		debuglog("difference", mean(map(i->norm(inc[:,i]), 1:size(inc, 2))));
+		ind = mapreduce(i->inc[:, i], +, 1:size(inc,2))
+		debuglog("difference", norm(a.f(ind)));
+	end
+	if "average" in debug
+		avg = mean(map(i->a.in[:, i], 1:size(a.in, 2)));
+		debuglog("average", mean(map(i->norm(a.f(a.in[:, i] - avg)), 1:size(a.in, 2))));
 	end
 
 	retgrad = [];
