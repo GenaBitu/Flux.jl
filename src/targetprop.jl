@@ -65,13 +65,13 @@ function targetprop!(a::Target, targetTuple; debug::Array = [])
 	end
 	if isa(a.out, TrackedArray)
 		l1 = a.loss(target, a.out); # TODO: Regularisation
-		debuglog("Classifier loss", l1);
+		debuglog("Layer-local loss function", l1);
 		back!(l1);
 	end
 	ϵ = a.σ * randn(size(a.in));
 	l2 = a.loss(a.dual_f(data(a.f(a.in .+ ϵ))), a.in .+ ϵ);
 	#l2 = a.loss(a.dual_f(a.f(a.in .+ ϵ)), a.in .+ ϵ); # Non-standard approach
-	debuglog("Auto-encoder loss", l2);
+	debuglog("Dual layer-local loss function", l2);
 	if "Reverse auto-encoder loss" in debug
 		l2i = a.loss(data(a.f(data(a.dual_f(data(a.out))))), data(a.out));
 		debuglog("Reverse auto-encoder loss", l2i);
