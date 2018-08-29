@@ -109,7 +109,9 @@ function targetprop!(a::Target, targetTuple; debug::Array = [])
 		end
 		debuglog("jacobian", jacobian(a.f, a.in[:, rand(1:size(a.in, 2))]));
 	end
-	return (data(findinverse(a.f, size(a.in, 1), data(target))), retgrad);
+	nextTarget = data(findinverse(a.f, size(a.in, 1), data(target)));
+	println(mse(data(a.f(nextTarget)), data(target)));
+	return (nextTarget, retgrad);
 end
 
 function targetprop!(a::Chain, target; debug::Array = [])
