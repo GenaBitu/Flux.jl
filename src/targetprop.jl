@@ -53,7 +53,7 @@ function targetprop!(a::Target, targetTuple; debug::Array = [])
 	end
 	if "average" in debug
 		avg = mean(map(i->a.in[:, i], 1:size(a.in, 2)));
-		debuglog("average", mean(map(i->norm(a.f(a.in[:, i] - avg)), 1:size(a.in, 2))));
+		debuglog("average", mean(map(i->norm(data(a.f(a.in[:, i] - avg))), 1:size(a.in, 2))));
 	end
 
 	retgrad = [];
@@ -103,9 +103,6 @@ function targettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = () -> 
 		grad = param(y_hat);
 		back!(modelloss(grad, d[2]));
 		target = @fix y_hat - η * length(d[2]) * grad.grad;
-		if length(debug) > 0
-			#println("Iteration:");
-		end
 		Optimise.@interrupts targetprop!(model, (target, grad.grad); debug = debug);
 		opt();
 		cb() == :stop && break;
