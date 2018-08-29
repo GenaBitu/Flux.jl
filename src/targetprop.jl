@@ -1,5 +1,27 @@
 export Target, targettrain!, difftargettrain!;
 
+freeze(m) = Flux.mapleaves(Flux.Tracker.data,m)
+
+function findinverse(m, d, x; options = Optim.Options(g_tol = 1e-8, iterations = 50000, f_calls_limit = 10000, store_trace = false, show_trace = false))
+	function f(θ, m, x)
+		return mse(m(reshape(θ, :, size(x, 2))), x);
+	end
+
+	function g!(w, θ, m, x)
+		p = param(reshape(θ, :, size(x, 2)));
+		fVal = mse(m(p), x);
+		Flux.back!(fVal);
+		copy!(w, p.grad);
+		return Flux.data(fVal);
+	end
+
+	#test the gradient:
+	θ = randn(d*size(x, 2));
+	mf = freeze(m);
+	res = optimize(θ -> f(θ, mf, x), (w, θ) ->  g!(w, θ, mf, x), θ, LBFGS(), options);
+	return reshape(Optim.minimizer(res),d,size(x,2));
+end
+
 mutable struct Target{F, S, L}
 	f::F
 	dual_f::S
