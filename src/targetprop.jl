@@ -112,12 +112,13 @@ end
 # difftargetprop
 
 function difftargetprop!(a::Target, packedTarget; debug::Array = [])
-	(target, last) = packedTarget
+	(target, realgrad, last) = packedTarget
 	if !last
 		target += data(a.out);
 	end
-	nextTarget = targetprop!(a, target; debug = debug) - data(a.dual_f(data(a.out)));
-	return (nextTarget, false);
+	(nextTarget, nextGrad) = targetprop!(a, (target, realgrad); debug = debug);
+	nextTarget -= data(a.dual_f(data(a.out)));
+	return (nextTarget, nextGrad, false);
 end
 
 function difftargetprop!(a::Chain, target; debug::Array = [])
@@ -133,10 +134,7 @@ function difftargettrain!(model, modelloss, data, opt; η::Real = 0.001, cb = ()
 		grad = param(y_hat);
 		back!(modelloss(grad, d[2]));
 		target = @fix y_hat - η * length(d[2]) * grad.grad;
-		if length(debug) > 0
-			println("Iteration:");
-		end
-		Optimise.@interrupts difftargetprop!(model, (target, true); debug = debug);
+		Optimise.@interrupts difftargetprop!(model, (target, grad.grad, true); debug = debug);
 		opt();
 		cb() == :stop && break;
 	end
